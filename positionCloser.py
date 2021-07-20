@@ -4,7 +4,7 @@ import pandas as pd
 
 from config.Ttrader_config import chat_id,bot_token,TRADE_UNIT,DB_CONFIG, CYCLE_TIME
 from util import DBaccess as db
-from markettools import CBs, reportbalance
+from markettools import CBs, reportbalance, getbalance
 
 DB = db.postgres(DB_CONFIG)
 
@@ -46,16 +46,19 @@ def closebuys(trades):
         cb2report = []
         if len(trades) > 0:
             for row in trades:
+                modelindex = row[4]
                 if row[3] == 'buy':
-                    traderes = CBs[row[4]].marketSell(row[1], row[2])
+                    traderes = CBs[modelindex].marketSell(row[1], row[2])
                 else:
-                    traderes = CBs[row[4]].marketBuy(row[1], TRADE_UNIT)
+                    traderes = CBs[modelindex].marketBuy(row[1], TRADE_UNIT)
                 tradeid = traderes.id[0]
-                tradereport = CBs[row[4]].getOrderID(id=tradeid)
+                tradereport = CBs[modelindex].getOrderID(id=tradeid)
                 DB.insert('trades', tradereport)
                 closeout((tradeid,row[0]))
+                status = getbalance(CBs[modelindex])
+                DB.insert('status', status)
                 if row[4] not in cb2report:
-                    cb2report.append(row[4])
+                    cb2report.append(modelindex)
     except Exception as e:
         print(e)
     return cb2report

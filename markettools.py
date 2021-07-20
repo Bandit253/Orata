@@ -33,7 +33,7 @@ def reportbalance(CB):
     balance += f"Total $US {df['Total $US'].sum():.2f}"
     return balance
 
-def recordstatus(CB):
+def getbalance(CB):
     df = CB.getAccounts()
     df['Rate'] = df.apply(lambda row: getmarketprice(row['currency']), axis=1)
     df['Total $US'] = df.apply(lambda row: (row['Rate']*float(row['balance'])), axis=1)
