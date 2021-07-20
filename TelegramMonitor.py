@@ -18,41 +18,42 @@ async def send_mess(entity, message):
 async def my_event_handler(event):
     rec = event.raw_text
     print(rec)  
-    action =rec.split(" ")[0]
-    model = rec.split(" ")[1]
-    closedelay = rec.split(" ")[2]
-    if not isinstance(closedelay, int):
-        closedelay = DEFAULT_CLOSE_DELAY
-    else:
+    action =rec.split(" ")[0].upper()
+    if action in ('BUY', 'SELL', 'HOLD', 'BAL'):
+        model = int(rec.split(" ")[1])
+        closedelay = int(rec.split(" ")[2])
+        # if not isinstance(closedelay, int):
+        #     closedelay = DEFAULT_CLOSE_DELAY
+        # else:
         closedelay = closedelay*60
-    if action.upper() == 'BUY':
-        buyres = CBs[model].marketBuy('BTC-USD', TRADE_UNIT)
-        tradeid = buyres.id[0]
-        acc = reportbalance()
-        await send_mess(chatname, acc)
-        buyreport = CBs[model].getOrderID(id=tradeid)
-        buyreport['model'] = model
-        buyreport['delay'] = closedelay
-        DB.insert('trades', buyreport)
+        if action == 'BUY':
+            buyres = CBs[model].marketBuy('BTC-USD', TRADE_UNIT)
+            tradeid = buyres.id[0]
+            # acc = reportbalance(CBs[model])
+            # await send_mess(chatname, acc)
+            buyreport = CBs[model].getOrderID(id=tradeid)
+            buyreport['model'] = model
+            buyreport['delay'] = closedelay
+            DB.insert('trades', buyreport)
 
-    elif action.upper() == 'SELL':
-        rate = CBpub.getprice(f'BTC-USD')
-        quantitytosell = TRADE_UNIT/ float(rate)
-        sellres =CBs[model].marketSell('BTC-USD', quantitytosell)
-        tradeid = sellres.id[0]
-        acc = reportbalance()
-        await send_mess(chatname, acc)
-        sellreport = CBs[model].getOrderID(id=tradeid)
-        sellreport['model'] = model
-        sellreport['delay'] = closedelay
-        DB.insert('trades', sellreport)
-    elif action.upper() == "HOLD":
-        acc = reportbalance(CBs[model])
-        await send_mess(chatname, acc)
-    elif action.upper() == 'BAL':
-        print
-    else:
-        print(f"No advice given")
+        elif action == 'SELL':
+            rate = CBpub.getprice(f'BTC-USD')
+            quantitytosell = TRADE_UNIT/ float(rate)
+            sellres =CBs[model].marketSell('BTC-USD', quantitytosell)
+            tradeid = sellres.id[0]
+            acc = reportbalance(CBs[model])
+            await send_mess(chatname, acc)
+            sellreport = CBs[model].getOrderID(id=tradeid)
+            sellreport['model'] = model
+            sellreport['delay'] = closedelay
+            DB.insert('trades', sellreport)
+        elif action == "HOLD":
+            acc = reportbalance(CBs[model])
+            await send_mess(chatname, acc)
+        elif action == 'BAL':
+            print
+        else:
+            print(f"No advice given")
     return
 
 

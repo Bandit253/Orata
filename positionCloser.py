@@ -26,56 +26,53 @@ def getorders():
         print(e)
     return openbuys
 
-def closeout(sells):
+def closeout(tradeids):
     try:
-        if len(sells) > 0:
-            for sell in sells:
-                sql = """ update trades """
-                sql += f""" set sold = '{sell[0]}'"""
-                sql += f""" where id = '{sell[1]}'; """    
-                DB.update(sql)
-                sql = """ update trades """
-                sql += f""" set sold = '{sell[1]}'"""
-                sql += f""" where id = '{sell[0]}'; """
-                DB.update(sql)
-            ret = True
-        else:
-            ret = False
+        sql = """ update trades """
+        sql += f""" set sold = '{tradeids[0]}'"""
+        sql += f""" where id = '{tradeids[1]}'; """    
+        DB.update(sql)
+        sql = """ update trades """
+        sql += f""" set sold = '{tradeids[1]}'"""
+        sql += f""" where id = '{tradeids[0]}'; """
+        DB.update(sql)
     except Exception as e:
         print(e)
-    return ret
-
+    return 
 
 def closebuys(trades):
-    print('Start closebuys')
+    # print('Start closebuys')
     try:
-        buys2close = []
-        for row in trades:
-            if row[3] == 'buy':
-                traderes = CBs[row[4]].marketSell(row[1], row[2])
-            else:
-                traderes = CBs[row[4]].marketBuy(row[1], TRADE_UNIT)
-            tradeid = traderes.id[0]
-            tradereport = CBs[row[4]].getOrderID(id=tradeid)
-            DB.insert('trades', tradereport)
-            buys2close.append((tradeid,row[0]))
+        cb2report = []
+        if len(trades) > 0:
+            for row in trades:
+                if row[3] == 'buy':
+                    traderes = CBs[row[4]].marketSell(row[1], row[2])
+                else:
+                    traderes = CBs[row[4]].marketBuy(row[1], TRADE_UNIT)
+                tradeid = traderes.id[0]
+                tradereport = CBs[row[4]].getOrderID(id=tradeid)
+                DB.insert('trades', tradereport)
+                closeout((tradeid,row[0]))
+                if row[4] not in cb2report:
+                    cb2report.append(row[4])
     except Exception as e:
         print(e)
-    return buys2close
+    return cb2report
 
 def clearoutstanding():
     openbuys = getorders()
-    buys2close = closebuys(openbuys)
-    report = closeout(buys2close) 
+    report = closebuys(openbuys)
     return report
 
 def main():
     ticker = threading.Event()
     while not ticker.wait(CYCLE_TIME):
         report = clearoutstanding()
-        # if report:
-        #     bal = reportbalance()
-        #     send_direct_mess(bal)
+        if len(report) > 0:
+            for p in report:
+                bal = reportbalance(CBs[p])
+                send_direct_mess(bal)
     return
 
 if __name__ == '__main__':
