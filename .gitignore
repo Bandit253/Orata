@@ -2,3 +2,5 @@ config/*
 *.pyc
 config/database.ini
 *.session
+data/positions.db
+exporter.py
