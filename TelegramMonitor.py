@@ -4,7 +4,7 @@ from telethon import TelegramClient, events
 import pandas as pd
 from config.Ttrader_config import api_hash,bot_token,chatname,api_id,TRADE_UNIT,DB_CONFIG, DEFAULT_CLOSE_DELAY
 from util import DBaccess as db
-from markettools import CBs, CBpub, getbalance, reportbalance
+from markettools import CBs, CBpub, getbalance, reportbalance, resetbalances
 
 DB = db.postgres(DB_CONFIG)
 
@@ -15,7 +15,7 @@ def updatedb(CB, tradeid, model, delay):
     tradereport['model'] = model
     tradereport['delay'] = delay
     DB.insert('trades', tradereport)
-    status = getbalance(CB)
+    status, jsstat = getbalance(CB)
     DB.insert('status', status)
     return
 
@@ -27,25 +27,20 @@ async def send_mess(entity, message):
 async def my_event_handler(event):
     rec = event.raw_text
     print(rec)  
-    action =rec.split(" ")[0].upper()
-    if action in ('BUY', 'SELL', 'HOLD', 'BAL'):
-        modelindex = int(rec.split(" ")[1])
-        closedelay = int(rec.split(" ")[2])
-        # if not isinstance(closedelay, int):
-        #     closedelay = DEFAULT_CLOSE_DELAY
-        # else:
-        closedelay = closedelay*60
+    command = rec.split(" ")
+    action =command[0].upper()
+    if action in ('BUY', 'SELL', 'HOLD', 'BAL', 'reset'):
+        modelindex = int(command[1]) 
+        if len(command) > 3:
+            closedelay = int(command[2])* 60
+        else:
+            closedelay = DEFAULT_CLOSE_DELAY
         if action == 'BUY':
             buyres = CBs[modelindex].marketBuy('BTC-USD', TRADE_UNIT)
             tradeid = buyres.id[0]
             acc = reportbalance(CBs[modelindex])
             await send_mess(chatname, acc)
-            updatedb(CBs[model], tradeid, modelindex, closedelay)
-            # buyreport = CBs[model].getOrderID(id=tradeid)
-            # buyreport['model'] = model
-            # buyreport['delay'] = closedelay
-            # DB.insert('trades', buyreport)
-
+            updatedb(CBs[modelindex], tradeid, modelindex, closedelay)
         elif action == 'SELL':
             rate = CBpub.getprice(f'BTC-USD')
             quantitytosell = TRADE_UNIT/ float(rate)
@@ -54,16 +49,18 @@ async def my_event_handler(event):
             acc = reportbalance(CBs[modelindex])
             await send_mess(chatname, acc)
             updatedb(CBs[modelindex], tradeid, modelindex, closedelay)
-            # sellreport = CBs[model].getOrderID(id=tradeid)
-            # sellreport['model'] = model
-            # sellreport['delay'] = closedelay
-            # DB.insert('trades', sellreport)
         elif action == "HOLD":
             # acc = reportbalance(CBs[modelindex])
             await send_mess(chatname, "HOLD functionality has been deprecated, use 'BAL <index>'")
         elif action == 'BAL':
             acc = reportbalance(CBs[modelindex])
             await send_mess(chatname, acc)
+        elif action == 'reset':
+            resetbalances(CBs[4], CBs[modelindex])
+            dfbal, jsbal = getbalance(CBs[modelindex])
+            jsbal['model'] = f'model {modelindex} - RESET'
+            DB.insert(dfbal)
+            await send_mess(chatname, jsbal)
         else:
             print(f"No advice given")
     return

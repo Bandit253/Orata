@@ -35,7 +35,7 @@ class AuthAPIBase():
 
 
 class AuthAPI(AuthAPIBase):
-    def __init__(self, api_key='', api_secret='', api_passphrase='', api_url='https://api.pro.coinbase.com', name='') -> None:
+    def __init__(self, api_key='', api_secret='', api_passphrase='', api_url='https://api.pro.coinbase.com', name='', id='') -> None:
         """Coinbase Pro API object model
 
         Parameters
@@ -88,6 +88,7 @@ class AuthAPI(AuthAPIBase):
         self._api_passphrase = api_passphrase
         self._api_url = api_url
         self.name = name
+        self.id = id
 
     def handle_init_error(self, err: str) -> None:
         if self.debug:
@@ -249,21 +250,7 @@ class AuthAPI(AuthAPIBase):
         resp = self.authAPI('GET', f"orders/{id}")
         if len(resp) > 0:
             df = resp.copy()
-        #     if status == 'open':
-        #         df = resp.copy()[['created_at', 'product_id',
-        #                             'side', 'type', 'size', 'price', 'status']]
-        #         df['value'] = float(df['price']) * float(df['size']) - \
-        #             (float(df['price']) * MARGIN_ADJUSTMENT)
-        #     else:
-        #         if 'specified_funds' in resp:
-        #             df = resp.copy()[['id','created_at', 'product_id', 'side', 'type', 'filled_size',
-        #                                 'specified_funds', 'executed_value', 'fill_fees', 'status']]
-        #         else:
-        #             # manual limit orders do not contain 'specified_funds'
-        #             df_tmp = resp.copy()
-        #             df_tmp['specified_funds'] = None
-        #             df = df_tmp[['id','created_at', 'product_id', 'side', 'type', 'filled_size',
-        #                             'specified_funds', 'executed_value', 'fill_fees', 'status']]
+
         else:
             return pd.DataFrame()
 
@@ -438,6 +425,24 @@ class AuthAPI(AuthAPIBase):
 
         # place order and return result
         return model.authAPI('POST', 'orders', order)
+
+    def transfer(self, frmacc, toacc, currency, amount) -> pd.DataFrame:
+                # {
+                #     "from": "86602c68-306a-4500-ac73-4ce56a91d83c",
+                #     "to": "e87429d3-f0a7-4f28-8dff-8dd93d383de1",
+                #     "currency": "BTC",
+                #     "amount": "1000.00"
+                # }
+        order ={
+                    "from": frmacc,
+                    "to": toacc,
+                    "currency": currency,
+                    "amount":  amount
+                }
+        print(order)
+        model = AuthAPI(self._api_key, self._api_secret,
+                        self._api_passphrase, self._api_url)
+        return model.authAPI('POST', 'profiles/transfer', order) 
 
     def marketSell(self, market: str = '', base_quantity: float = 0) -> pd.DataFrame:
         if not self._isMarketValid(market):

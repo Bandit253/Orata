@@ -1,3 +1,4 @@
+import datetime
 import threading
 import requests
 import pandas as pd
@@ -19,8 +20,8 @@ def getorders():
     try:
         sql = """select id, product_id, filled_size, side, model """
         sql += """ from trades """
-        sql += f""" where strftime('%s','now') - strftime('%s', done_at) > delay """
-        sql += """ and sold = 0 ; """
+        sql += f""" where extract(EPOCH from now()::timestamp - done_at::timestamp) > delay """
+        sql += """ and sold = '0' ; """
         openbuys = DB.querydb(sql)
     except Exception as e:
         print(e)
@@ -55,7 +56,7 @@ def closebuys(trades):
                 tradereport = CBs[modelindex].getOrderID(id=tradeid)
                 DB.insert('trades', tradereport)
                 closeout((tradeid,row[0]))
-                status = getbalance(CBs[modelindex])
+                status,  jsbal = getbalance(CBs[modelindex])
                 DB.insert('status', status)
                 if row[4] not in cb2report:
                     cb2report.append(modelindex)
@@ -71,6 +72,8 @@ def clearoutstanding():
 def main():
     ticker = threading.Event()
     while not ticker.wait(CYCLE_TIME):
+        now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        print(now)
         report = clearoutstanding()
         if len(report) > 0:
             for p in report:

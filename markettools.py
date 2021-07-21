@@ -1,7 +1,7 @@
 
 import datetime
 from exchange.coinbase_pro import api
-from config.Ttrader_config import portfolios
+from config.Ttrader_config import portfolios, START_BTC, START_USD
 import pandas as pd
 
 
@@ -11,7 +11,8 @@ for model, cfg in portfolios.items():
                     portfolios[model]['api_secret'], 
                     portfolios[model]['api_passphrase'], 
                     portfolios[model]['api_url'],
-                    portfolios[model]['name'])
+                    portfolios[model]['name'],
+                    portfolios[model]['id'])
     CBs.append(CB)
 CBpub = api.PublicAPI()
 
@@ -27,7 +28,7 @@ def reportbalance(CB):
     df['Rate'] = df.apply(lambda row: getmarketprice(row['currency']), axis=1)
     df['Total $US'] = df.apply(lambda row: (row['Rate']*float(row['balance'])), axis=1)
     balance = CB.name
-    balance +='currency : available : Rate : $US \n'
+    balance +='\ncurrency : available : Rate : $US \n'
     for index, row in df.iterrows():
         balance += f"{row['currency']} : {float(row['available']):.10f} : {float(row['Rate']):.2f} : {float(row['Total $US']):.2f}\n"
     balance += f"Total $US {df['Total $US'].sum():.2f}"
@@ -47,9 +48,29 @@ def getbalance(CB):
             btcdollar = row['Total $US']
     status = {"created" : now, "model" : CB.name, "BTC" : btcbal, "rate" : btcrate,  "BTC$" : btcdollar, "USD" : dollarbal, "Total" : df['Total $US'].sum() }
     dfstatus = pd.DataFrame([status])
-    return dfstatus
+    return dfstatus, status
 
-# def main():
+def resetbalances(CBfrom, CBto):
+    curbal = CBto.getAccounts()
+    for index, row in curbal.iterrows():
+        if row['currency'] == 'USD':
+            dol_dif = START_USD - float(row['available'])
+            if dol_dif > 0:
+                CBfrom.transfer(CBfrom.id, CBto.id, 'USD', dol_dif )
+            else:
+                CBto.transfer(CBto.id, CBfrom.id,  'USD', -dol_dif )
+        elif row['currency'] == 'BTC':
+            BTC_dif = START_BTC - float(row['available'])
+            if BTC_dif > 0:
+                CBfrom.transfer(CBfrom.id, CBto.id, 'BTC', BTC_dif )
+            else:
+                CBto.transfer(CBto.id, CBfrom.id, 'BTC', -BTC_dif )
+    return
+
+
+# transfer(CBs[4], CBs[3])
+
+# # def main():
 #     r = recordstatus(CBs[4])
 #     print(r)
  

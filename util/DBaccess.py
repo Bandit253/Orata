@@ -77,7 +77,8 @@ class postgres():
             conn = psycopg2.connect(**params)
             cur = conn.cursor()
             result = []
-            response = cur.execute(sql)
+            cur.execute(sql)
+            response = cur.fetchall()
             for row in response:
                 result.append(row)
             cur.close()
@@ -114,7 +115,12 @@ class postgres():
 
 def main():
     db = postgres(r'D:\_MlTrader\config\database.ini')
-    db.connect()
+    sql = """select id, product_id, filled_size, side, model """
+    sql += """ from trades """
+    sql += f""" where extract(EPOCH from now()::timestamp - done_at::timestamp) > delay """
+    sql += """ and sold = '0' ; """
+    res = db.querydb(sql)
+    print(res)
 
 if __name__ == '__main__':
     main()
