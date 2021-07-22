@@ -4,3 +4,8 @@ config/database.ini
 *.session
 data/positions.db
 exporter.py
+MarketNews.session-journal
+test.py
+data/*.html
+
+zipfiles/*.zip

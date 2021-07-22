@@ -1,10 +1,11 @@
-
-
+import datetime
+import json
 from telethon import TelegramClient, events
 import pandas as pd
 from config.Ttrader_config import api_hash,bot_token,chatname,api_id,TRADE_UNIT,DB_CONFIG, DEFAULT_CLOSE_DELAY
 from util import DBaccess as db
 from markettools import CBs, CBpub, getbalance, reportbalance, resetbalances
+from graphing import createfillchart, dffromdb, createchart
 
 DB = db.postgres(DB_CONFIG)
 
@@ -19,6 +20,11 @@ def updatedb(CB, tradeid, model, delay):
     DB.insert('status', status)
     return
 
+def getnow():
+    now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    yesterday = (datetime.datetime.now() - datetime.timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')
+    return now, yesterday
+            
 
 async def send_mess(entity, message):
     await client.send_message(entity=entity, message=message)
@@ -29,7 +35,7 @@ async def my_event_handler(event):
     print(rec)  
     command = rec.split(" ")
     action =command[0].upper()
-    if action in ('BUY', 'SELL', 'HOLD', 'BAL', 'reset'):
+    if action in ('BUY', 'SELL', 'HOLD', 'BAL', 'RESET', 'CHART'):
         modelindex = int(command[1]) 
         if len(command) > 3:
             closedelay = int(command[2])* 60
@@ -46,6 +52,7 @@ async def my_event_handler(event):
             quantitytosell = TRADE_UNIT/ float(rate)
             sellres =CBs[modelindex].marketSell('BTC-USD', quantitytosell)
             tradeid = sellres.id[0]
+            
             acc = reportbalance(CBs[modelindex])
             await send_mess(chatname, acc)
             updatedb(CBs[modelindex], tradeid, modelindex, closedelay)
@@ -55,12 +62,28 @@ async def my_event_handler(event):
         elif action == 'BAL':
             acc = reportbalance(CBs[modelindex])
             await send_mess(chatname, acc)
-        elif action == 'reset':
+        elif action == 'CHART':
+            mods = [modelindex]
+            if len(command) > 2:
+                mods.append(command[2])
+            dt_to, dt_from = getnow()
+            df = dffromdb('status', model=mods, dt_from=dt_from, dt_to=dt_to )
+            if len(mods) == 1:
+                zipchart = createfillchart(df)
+            else:
+                zipchart = createchart(df)
+            await client.send_file(chatname, zipchart )
+        elif action == 'RESET':
             resetbalances(CBs[4], CBs[modelindex])
             dfbal, jsbal = getbalance(CBs[modelindex])
             jsbal['model'] = f'model {modelindex} - RESET'
-            DB.insert(dfbal)
-            await send_mess(chatname, jsbal)
+            DB.insert('status', dfbal)
+            sql = """ update trades """
+            sql += f""" set sold = 'rest'"""
+            sql += f""" where model = '{modelindex}' and sold = '0'; """
+            DB.update(sql)
+            ostr = json.dumps(jsbal)
+            await send_mess(chatname, ostr)
         else:
             print(f"No advice given")
     return

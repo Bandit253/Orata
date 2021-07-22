@@ -112,6 +112,13 @@ class postgres():
         with engine.connect() as connection:
             data.to_sql(name=table, con=connection, index=False, if_exists='append')
         return
+    
+    def dffromsql(self, sql):
+        engine = create_engine(f"postgresql://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}")
+        df = pd.read_sql_query(sql ,con=engine)
+        return df
+
+
 
 def main():
     db = postgres(r'D:\_MlTrader\config\database.ini')
