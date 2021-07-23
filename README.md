@@ -38,6 +38,7 @@ Return the model Chart of requested model.
 * Parameters: 
     1. Account of model index
     2. (optional) Second model index
+    3. (optional) "z" for zero to first value
 * Returns:
     1. Returns zip file of HTML page of a chart with the performance of the last 24 hours.
     - If 1 index supplied you get a stacked graph of USD & BTC$

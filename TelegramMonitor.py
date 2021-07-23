@@ -11,12 +11,14 @@ DB = db.postgres(DB_CONFIG)
 
 client = TelegramClient(chatname, api_id, api_hash).start(bot_token=bot_token)
 
-def updatedb(CB, tradeid, model, delay):
+def updatedb(CB, tradeid, model, delay, trade, action):
     tradereport = CBs[model].getOrderID(id=tradeid)
     tradereport['model'] = model
     tradereport['delay'] = delay
     DB.insert('trades', tradereport)
     status, jsstat = getbalance(CB)
+    status['trade'] = trade
+    status['action'] = action
     DB.insert('status', status)
     return
 
@@ -46,7 +48,7 @@ async def my_event_handler(event):
             tradeid = buyres.id[0]
             acc = reportbalance(CBs[modelindex])
             await send_mess(chatname, acc)
-            updatedb(CBs[modelindex], tradeid, modelindex, closedelay)
+            updatedb(CBs[modelindex], tradeid, modelindex, closedelay, 'BUY', 'OPEN')
         elif action == 'SELL':
             rate = CBpub.getprice(f'BTC-USD')
             quantitytosell = TRADE_UNIT/ float(rate)
@@ -55,7 +57,7 @@ async def my_event_handler(event):
             
             acc = reportbalance(CBs[modelindex])
             await send_mess(chatname, acc)
-            updatedb(CBs[modelindex], tradeid, modelindex, closedelay)
+            updatedb(CBs[modelindex], tradeid, modelindex, closedelay, 'SELL', 'OPEN')
         elif action == "HOLD":
             # acc = reportbalance(CBs[modelindex])
             await send_mess(chatname, "HOLD functionality has been deprecated, use 'BAL <index>'")
@@ -71,7 +73,10 @@ async def my_event_handler(event):
             if len(mods) == 1:
                 zipchart = createfillchart(df)
             else:
-                zipchart = createchart(df)
+                if command[2].upper() == 'Z':
+                    zipchart = createchart(df, True)    
+                else:
+                    zipchart = createchart(df)
             await client.send_file(chatname, zipchart )
         elif action == 'RESET':
             resetbalances(CBs[4], CBs[modelindex])

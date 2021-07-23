@@ -48,7 +48,8 @@ def closebuys(trades):
         if len(trades) > 0:
             for row in trades:
                 modelindex = row[4]
-                if row[3] == 'buy':
+                action = row[3]
+                if action == 'buy':
                     traderes = CBs[modelindex].marketSell(row[1], row[2])
                 else:
                     traderes = CBs[modelindex].marketBuy(row[1], TRADE_UNIT)
@@ -57,6 +58,8 @@ def closebuys(trades):
                 DB.insert('trades', tradereport)
                 closeout((tradeid,row[0]))
                 status,  jsbal = getbalance(CBs[modelindex])
+                status['trade'] = action.upper()
+                status['action'] = 'CLOSE'
                 DB.insert('status', status)
                 if row[4] not in cb2report:
                     cb2report.append(modelindex)
@@ -73,6 +76,7 @@ def main():
     ticker = threading.Event()
     while not ticker.wait(CYCLE_TIME):
         now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        # now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         print(now)
         report = clearoutstanding()
         if len(report) > 0:
