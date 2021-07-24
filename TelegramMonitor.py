@@ -75,7 +75,7 @@ async def my_event_handler(event):
             if len(mods) == 1:
                 zipchart = createfillchart(df)
             else:
-                if command[2].upper() == 'Z':
+                if command[3].upper() == 'Z':
                     zipchart = createchart(df, True)    
                 else:
                     zipchart = createchart(df)
