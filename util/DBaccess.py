@@ -108,9 +108,12 @@ class postgres():
         return ofile
 
     def insert(self, table:str, data: pd.DataFrame):
-        engine = create_engine(f"postgresql://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}")
-        with engine.connect() as connection:
-            data.to_sql(name=table, con=connection, index=False, if_exists='append')
+        try:
+            engine = create_engine(f"postgresql://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}")
+            with engine.connect() as connection:
+                data.to_sql(name=table, con=connection, index=False, if_exists='append')
+        except Exception as e:
+            print(e)
         return
     
     def dffromsql(self, sql):

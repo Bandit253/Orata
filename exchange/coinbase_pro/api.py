@@ -439,7 +439,7 @@ class AuthAPI(AuthAPIBase):
                     "currency": currency,
                     "amount":  amount
                 }
-        print(order)
+        print(f"BUY - {order}")
         model = AuthAPI(self._api_key, self._api_secret,
                         self._api_passphrase, self._api_url)
         return model.authAPI('POST', 'profiles/transfer', order) 
@@ -458,7 +458,7 @@ class AuthAPI(AuthAPIBase):
             'size': self.marketBaseIncrement(market, base_quantity)
         }
 
-        print(order)
+        print(f"SELL - {order}")
 
         model = AuthAPI(self._api_key, self._api_secret,
                         self._api_passphrase, self._api_url)

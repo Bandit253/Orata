@@ -61,20 +61,20 @@ def createchart(df: DataFrame, zero:bool=False)->str:
         if zero:
             first = dfm['Total'].iloc[0]
             dfm['Total'] = dfm['Total'] - first
-        print(dfm.head())
+        # print(dfm.head())
         fig.add_trace(go.Scatter(x = dfm['created'],
                         y = dfm['Total'],
                         mode='lines',
                         name=model),
                         secondary_y=True)
-        dfso = df.loc[(df['trade'] == 'SELL') & (df['action'] == 'OPEN')]
-        dfsc = df.loc[(df['trade'] == 'SELL') & (df['action'] == 'CLOSE')]
-        dfbo = df.loc[(df['trade'] == 'BUY') & (df['action'] == 'OPEN')]
-        dfbc = df.loc[(df['trade'] == 'BUY') & (df['action'] == 'CLOSE')]
-        dfpoints = [(dfbo, "BUY-OPEN", 'green', 'triangle-up'),
-                    (dfbc, "BUY-CLOSE", 'red', 'triangle-up'),
-                    (dfso, "SELL-OPEN", 'green', 'triangle-down'), 
-                    (dfsc, "SELL-CLOSE", 'red', 'triangle-down')]
+        dfso = dfm.loc[(dfm['trade'] == 'SELL') & (dfm['action'] == 'OPEN')]
+        dfsc = dfm.loc[(dfm['trade'] == 'SELL') & (dfm['action'] == 'CLOSE')]
+        dfbo = dfm.loc[(dfm['trade'] == 'BUY') & (dfm['action'] == 'OPEN')]
+        dfbc = dfm.loc[(dfm['trade'] == 'BUY') & (dfm['action'] == 'CLOSE')]
+        dfpoints = [(dfbo, "BUY-OPEN", 'green', 'triangle-right'),
+                    (dfbc, "BUY-CLOSE", 'green', 'triangle-left'),
+                    (dfso, "SELL-OPEN", 'red', 'triangle-right'), 
+                    (dfsc, "SELL-CLOSE", 'red', 'triangle-left')]
         for pts in dfpoints:
             fig.add_trace(go.Scatter(x = pts[0]['created'],
                         y = pts[0]['Total'],
@@ -113,14 +113,14 @@ def createchart(df: DataFrame, zero:bool=False)->str:
     fig.update_yaxes(title_text="<b>US $</b>", secondary_y=True)
     fig.update_yaxes(title_text="<b>1 Bitcoin</b>", secondary_y=False)
 
-    fig.show()
-    # mfile = "-".join(models).replace(" ","")
-    # html = f"data/{mfile}.html"
-    # fig.write_html(html)
-    # chartzip =os.path.join('zipfiles', mfile + ".zip")
-    # with ZipFile(chartzip, 'w') as zipf:
-    #     zipf.write(html, arcname=f"{mfile}.html", compress_type=ZIP_DEFLATED)
-    # return chartzip
+    # fig.show()
+    mfile = "-".join(models).replace(" ","")
+    html = f"data/{mfile}.html"
+    fig.write_html(html)
+    chartzip =os.path.join('zipfiles', mfile + ".zip")
+    with ZipFile(chartzip, 'w') as zipf:
+        zipf.write(html, arcname=f"{mfile}.html", compress_type=ZIP_DEFLATED)
+    return chartzip
 
 def createfillchart(df: DataFrame)->str:
     models = df['model'].unique()
@@ -174,13 +174,13 @@ def createfillchart(df: DataFrame)->str:
     return chartzip
 
 
-def main():
-    now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    dt_from = (datetime.datetime.now() - datetime.timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')
-    df = dffromdb('status', model=[1, 0], dt_from=dt_from, dt_to=now )
-    # print(df.head())
-    o = createchart(df)
-    print(o)
+# def main():
+#     now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+#     dt_from = (datetime.datetime.now() - datetime.timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')
+#     df = dffromdb('status', model=[1, 0], dt_from=dt_from, dt_to=now )
+#     # print(df.head())
+#     o = createchart(df)
+#     print(o)
 
-if __name__ == '__main__':
-    main()
+# if __name__ == '__main__':
+#     main()

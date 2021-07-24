@@ -21,7 +21,8 @@ def getorders():
         sql = """select id, product_id, filled_size, side, model """
         sql += """ from trades """
         sql += f""" where extract(EPOCH from now()::timestamp - done_at::timestamp) > delay """
-        sql += """ and sold = '0' ; """
+        sql += """ and sold = '0' """
+        sql += """ ORDER BY created_at desc; """
         openbuys = DB.querydb(sql)
     except Exception as e:
         print(e)
@@ -76,7 +77,6 @@ def main():
     ticker = threading.Event()
     while not ticker.wait(CYCLE_TIME):
         now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        # now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         print(now)
         report = clearoutstanding()
         if len(report) > 0:

@@ -34,18 +34,20 @@ async def send_mess(entity, message):
 @client.on(events.NewMessage(chats=chatname))
 async def my_event_handler(event):
     rec = event.raw_text
-    print(rec)  
+    # print(rec)  
     command = rec.split(" ")
     action =command[0].upper()
     if action in ('BUY', 'SELL', 'HOLD', 'BAL', 'RESET', 'CHART'):
+        print(rec) 
         modelindex = int(command[1]) 
-        if len(command) > 3:
+        if len(command) >= 3:
             closedelay = int(command[2])* 60
         else:
             closedelay = DEFAULT_CLOSE_DELAY
         if action == 'BUY':
             buyres = CBs[modelindex].marketBuy('BTC-USD', TRADE_UNIT)
             tradeid = buyres.id[0]
+            
             acc = reportbalance(CBs[modelindex])
             await send_mess(chatname, acc)
             updatedb(CBs[modelindex], tradeid, modelindex, closedelay, 'BUY', 'OPEN')
