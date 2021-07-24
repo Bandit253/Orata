@@ -393,6 +393,10 @@ class AuthAPI(AuthAPIBase):
         except:
             return None
 
+    def getnow(self):
+        return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+
     def marketBuy(self, market: str = '', quote_quantity: float = 0) -> pd.DataFrame:
         """Executes a market buy providing a funding amount"""
 
@@ -415,10 +419,8 @@ class AuthAPI(AuthAPIBase):
             'side': 'buy',
             'funds': self.marketQuoteIncrement(market, quote_quantity)
         }
-
-        if self.debug is True:
-            print(order)
-
+        now = self.getnow()
+        print(f"{now} - BUY - {self.name} - {order}")
         # connect to authenticated coinbase pro api
         model = AuthAPI(self._api_key, self._api_secret,
                         self._api_passphrase, self._api_url)
@@ -439,7 +441,8 @@ class AuthAPI(AuthAPIBase):
                     "currency": currency,
                     "amount":  amount
                 }
-        print(f"BUY - {order}")
+        now = self.getnow()
+        print(f"{now} - TRANSFER - {self.name} - {order}")
         model = AuthAPI(self._api_key, self._api_secret,
                         self._api_passphrase, self._api_url)
         return model.authAPI('POST', 'profiles/transfer', order) 
@@ -458,7 +461,8 @@ class AuthAPI(AuthAPIBase):
             'size': self.marketBaseIncrement(market, base_quantity)
         }
 
-        print(f"SELL - {order}")
+        now = self.getnow()
+        print(f"{now} - SELL - {self.name} - {order} ")
 
         model = AuthAPI(self._api_key, self._api_secret,
                         self._api_passphrase, self._api_url)
