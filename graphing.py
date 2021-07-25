@@ -7,6 +7,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from config.Ttrader_config import DB_CONFIG
 from util import DBaccess as db
+import BTC_history as btc
 from zipfile import ZipFile, ZIP_DEFLATED
 pd.options.mode.chained_assignment = None
 
@@ -15,6 +16,10 @@ DB = db.postgres(DB_CONFIG)
 appPath = os.path.dirname(os.path.realpath(__file__))
 dataPath = os.path.join(appPath, 'data')
 
+def getnow():
+    now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    yesterday = (datetime.datetime.now() - datetime.timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')
+    return now, yesterday
 
 def dffromdb(table:str, model:list=[], fields:list=[], dt_from:str=None, dt_to:str=None) -> pd.DataFrame:
     if len(fields) > 0:
@@ -43,28 +48,29 @@ def dffromdb(table:str, model:list=[], fields:list=[], dt_from:str=None, dt_to:s
     df['USD'] = pd.to_numeric(df['USD'])
     return df
 
-def createchart(df: DataFrame, zero:bool=False)->str:
+def createchart(df: DataFrame, field:str='Total', zero:bool=False)->str:
     models = df['model'].unique()
     stats = []
     fig = make_subplots(specs=[[{"secondary_y": True}]])
     for model in models:
         dfm = df.loc[df['model'] == model]
-        min = dfm['Total'].min()
-        max = dfm['Total'].max()
-        f = dfm['Total'].iloc[0]
-        l = dfm['Total'].iloc[-1]
+        min = dfm[field].min()
+        max = dfm[field].max()
+        f = dfm[field].iloc[0]
+        l = dfm[field].iloc[-1]
         change = l-f
         perc = (change/f)*100
         tsat = f"{model}: Range (min, max): {min:.2f} to {max:.2f}, Change: {change:.2f} ({perc:.2f}%) "
         tsat += f"Current Total {l:.2f}<br>"
         stats.append(tsat)
         if zero:
-            first = dfm['Total'].iloc[0]
-            dfm['Total'] = dfm['Total'] - first
+            first = dfm[field].iloc[0]
+            dfm[field] = dfm[field] - first
         # print(dfm.head())
         fig.add_trace(go.Scatter(x = dfm['created'],
-                        y = dfm['Total'],
+                        y = dfm[field],
                         mode='lines',
+                        legendgroup=model,
                         name=model),
                         secondary_y=True)
         dfso = dfm.loc[(dfm['trade'] == 'SELL') & (dfm['action'] == 'OPEN')]
@@ -77,37 +83,51 @@ def createchart(df: DataFrame, zero:bool=False)->str:
                     (dfsc, "SELL-CLOSE", 'red', 'triangle-left')]
         for pts in dfpoints:
             fig.add_trace(go.Scatter(x = pts[0]['created'],
-                        y = pts[0]['Total'],
+                        y = pts[0][field],
                         mode='markers',
                         marker = dict(size =8, color =pts[2], symbol =pts[3]),
+                        legendgroup=model,
                         name=pts[1]),
                         secondary_y=True)
-
-
-    min = df['rate'].min()
-    max = df['rate'].max()
-    f = df['rate'].iloc[0]
-    l = df['rate'].iloc[-1]
+    
+    btc.updatehistory()
+    now, yesterday = getnow()
+    df = btc.getbtc(yesterday)    
+    
+    min = df['Close'].min()
+    max = df['Close'].max()
+    f = df['Close'].iloc[0]
+    l = df['Close'].iloc[-1]
     
     change = l-f
     perc = (change/f)*100
-    tsat = f"BTC: Range (min, max): {min:.2f} to {max:.2f}, Change: {change:.2f} ({perc:.2f}%) "
+    tsat = f"BTC: Close Range (min, max): {min:.2f} to {max:.2f}, Change: {change:.2f} ({perc:.2f}%) "
     tsat += f"Current Rate {l:.2f}<br>"
     stats.append(tsat)
 
-    fig.add_trace(go.Scatter(x = df['created'],
-                        y = df['rate'],
-                        mode='lines',
-                        line=dict(
-                                color='black',
-                                width=2
-                            ),
-                        name='BTC$'),
+    fig.add_trace(go.Candlestick(
+                        x=df['dtz'],
+                        open=df['Open'],
+                        high=df['High'],
+                        low=df['Low'],
+                        close=df['Close'],
+                        name = 'Candles'),
                         secondary_y=False)
-    title = "Bots Versus Market<br>"
+
+    # fig.add_trace(go.Scatter(x = df['created'],
+    #                     y = df['rate'],
+    #                     mode='lines',
+    #                     line=dict(
+    #                             color='black',
+    #                             width=2
+    #                         ),
+    #                     name='BTC$'),
+    #                     secondary_y=False)
+
+    fig.update_layout(xaxis_rangeslider_visible=False)
+    title = f"Bots Versus Market: {field}<br>"
     for s in stats:
         title += s
-
     fig.update_layout(title_text=title)
     fig.update_xaxes(title_text="Date")
     fig.update_yaxes(title_text="<b>US $</b>", secondary_y=True)
@@ -177,9 +197,9 @@ def createfillchart(df: DataFrame)->str:
 # def main():
 #     now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 #     dt_from = (datetime.datetime.now() - datetime.timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')
-#     df = dffromdb('status', model=[1, 0], dt_from=dt_from, dt_to=now )
+#     df = dffromdb('status', model=[2], dt_from=dt_from, dt_to=now )
 #     # print(df.head())
-#     o = createchart(df)
+#     o = createchart(df, field='USD', zero=True)
 #     print(o)
 
 # if __name__ == '__main__':

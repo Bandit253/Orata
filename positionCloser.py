@@ -21,7 +21,7 @@ def getorders():
         sql = """select id, product_id, filled_size, side, model """
         sql += """ from trades """
         sql += f""" where extract(EPOCH from now()::timestamp - done_at::timestamp) > delay """
-        sql += """ and sold = '0' """
+        sql += """ and sold = '0' and delay > 0 """
         sql += """ ORDER BY created_at desc; """
         openbuys = DB.querydb(sql)
     except Exception as e:
@@ -52,14 +52,16 @@ def closebuys(trades):
                 action = row[3]
                 if action == 'buy':
                     traderes = CBs[modelindex].marketSell(row[1], row[2])
+                    nextaction = 'SELL'
                 else:
                     traderes = CBs[modelindex].marketBuy(row[1], TRADE_UNIT)
+                    nextaction = 'BUY'
                 tradeid = traderes.id[0]
                 tradereport = CBs[modelindex].getOrderID(id=tradeid)
                 DB.insert('trades', tradereport)
                 closeout((tradeid,row[0]))
                 status,  jsbal = getbalance(CBs[modelindex])
-                status['trade'] = action.upper()
+                status['trade'] = nextaction
                 status['action'] = 'CLOSE'
                 DB.insert('status', status)
                 if row[4] not in cb2report:
@@ -75,7 +77,7 @@ def clearoutstanding():
 
 def main():
     ticker = threading.Event()
-    while not ticker.wait(CYCLE_TIME):
+    while not ticker.wait(CYCLE_TIME): 
         now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         print(now)
         report = clearoutstanding()

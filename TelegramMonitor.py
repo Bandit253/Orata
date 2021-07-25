@@ -39,8 +39,10 @@ async def my_event_handler(event):
     action =command[0].upper()
     if action in ('BUY', 'SELL', 'HOLD', 'BAL', 'RESET', 'CHART'):
         print(rec) 
-        modelindex = int(command[1]) 
+        if action != 'CHART':
+            modelindex = int(command[1]) 
         if len(command) >= 3:
+            
             closedelay = int(command[2])* 60
         else:
             closedelay = DEFAULT_CLOSE_DELAY
@@ -67,19 +69,31 @@ async def my_event_handler(event):
             acc = reportbalance(CBs[modelindex])
             await send_mess(chatname, acc)
         elif action == 'CHART':
-            mods = [modelindex]
-            if len(command) > 2:
-                mods.append(command[2])
+            type = command[1].upper()
+            mods=[]
+            for cmd in command[2:]:
+                mods.append(cmd)
             dt_to, dt_from = getnow()
-            df = dffromdb('status', model=mods, dt_from=dt_from, dt_to=dt_to )
-            if len(mods) == 1:
+            zipchart = None
+            if type == 'F':
+                df = dffromdb('status', model=mods, dt_from=dt_from, dt_to=dt_to )
                 zipchart = createfillchart(df)
-            else:
-                if command[3].upper() == 'Z':
-                    zipchart = createchart(df, True)    
-                else:
-                    zipchart = createchart(df)
-            await client.send_file(chatname, zipchart )
+            elif type == 'D':
+                df = dffromdb('status', model=mods, dt_from=dt_from, dt_to=dt_to )
+                zipchart = createchart(df, zero=False, field='USD') 
+            elif type == 'DZ':
+                df = dffromdb('status', model=mods, dt_from=dt_from, dt_to=dt_to )
+                zipchart = createchart(df, zero=True, field='USD') 
+            elif type == 'T':
+                df = dffromdb('status', model=mods, dt_from=dt_from, dt_to=dt_to )
+                zipchart = createchart(df, zero=False, field='Total') 
+            elif type == 'TZ':
+                df = dffromdb('status', model=mods, dt_from=dt_from, dt_to=dt_to )
+                zipchart = createchart(df, zero=True, field='Total')                 
+            else:   
+                await client.send_message(chatname, f"Error: '{rec}' is not a valid chart command" )       
+            if zipchart:                
+                await client.send_file(chatname, zipchart )
         elif action == 'RESET':
             resetbalances(CBs[4], CBs[modelindex])
             dfbal, jsbal = getbalance(CBs[modelindex])

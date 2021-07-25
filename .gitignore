@@ -9,3 +9,8 @@ test.py
 data/*.html
 
 zipfiles/*.zip
+util/tempdata/temp.json
+test.py
+util/Oct_1_2019_1m.pkl
+
+Orata.bat

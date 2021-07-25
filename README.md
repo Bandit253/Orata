@@ -36,9 +36,14 @@ Return the model account balance to DEFAULT_USD and DEFAULT_BTC
 ### Chart
 Return the model Chart of requested model. 
 * Parameters: 
-    1. Account of model index
-    2. (optional) Second model index
-    3. (optional) "z" for zero to first value
+    1. Type of chart 
+    - D - US$
+    - T - Total $
+    - DZ - US$ zeroed
+    - TZ - Total zeroed
+    - F - fill
+    2. Model index
+    3. (optional) additional model indexies
 * Returns:
     1. Returns zip file of HTML page of a chart with the performance of the last 24 hours.
     - If 1 index supplied you get a stacked graph of USD & BTC$
