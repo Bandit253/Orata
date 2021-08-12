@@ -41,8 +41,7 @@ async def my_event_handler(event):
         print(rec) 
         if action != 'CHART':
             modelindex = int(command[1]) 
-        if len(command) >= 3:
-            
+        if len(command) >= 3: 
             closedelay = int(command[2])* 60
         else:
             closedelay = DEFAULT_CLOSE_DELAY

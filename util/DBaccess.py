@@ -123,14 +123,14 @@ class postgres():
 
 
 
-def main():
-    db = postgres(r'D:\_MlTrader\config\database.ini')
-    sql = """select id, product_id, filled_size, side, model """
-    sql += """ from trades """
-    sql += f""" where extract(EPOCH from now()::timestamp - done_at::timestamp) > delay """
-    sql += """ and sold = '0' ; """
-    res = db.querydb(sql)
-    print(res)
+# def main():
+#     db = postgres(r'D:\_Orata\config\database.ini')
+#     sql = """select id, product_id, filled_size, side, model """
+#     sql += """ from trades """
+#     sql += f""" where extract(EPOCH from now()::timestamp - done_at::timestamp) > delay """
+#     sql += """ and sold = '0' ; """
+#     res = db.querydb(sql)
+#     print(res)
 
-if __name__ == '__main__':
-    main()
+# if __name__ == '__main__':
+#     main()

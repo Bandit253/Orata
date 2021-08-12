@@ -77,7 +77,7 @@ def clearoutstanding():
 
 def main():
     ticker = threading.Event()
-    while not ticker.wait(CYCLE_TIME): 
+    while not ticker.wait(CYCLE_TIME): #
         now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         print(now)
         report = clearoutstanding()

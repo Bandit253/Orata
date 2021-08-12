@@ -63,6 +63,7 @@ def createchart(df: DataFrame, field:str='Total', zero:bool=False)->str:
         tsat = f"{model}: Range (min, max): {min:.2f} to {max:.2f}, Change: {change:.2f} ({perc:.2f}%) "
         tsat += f"Current Total {l:.2f}<br>"
         stats.append(tsat)
+        # print(dfm.head())
         if zero:
             first = dfm[field].iloc[0]
             dfm[field] = dfm[field] - first
@@ -113,16 +114,6 @@ def createchart(df: DataFrame, field:str='Total', zero:bool=False)->str:
                         close=df['Close'],
                         name = 'Candles'),
                         secondary_y=False)
-
-    # fig.add_trace(go.Scatter(x = df['created'],
-    #                     y = df['rate'],
-    #                     mode='lines',
-    #                     line=dict(
-    #                             color='black',
-    #                             width=2
-    #                         ),
-    #                     name='BTC$'),
-    #                     secondary_y=False)
 
     fig.update_layout(xaxis_rangeslider_visible=False)
     title = f"Bots Versus Market: {field}<br>"
@@ -197,7 +188,7 @@ def createfillchart(df: DataFrame)->str:
 # def main():
 #     now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 #     dt_from = (datetime.datetime.now() - datetime.timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')
-#     df = dffromdb('status', model=[2], dt_from=dt_from, dt_to=now )
+#     df = dffromdb('status', model=[3], dt_from=dt_from, dt_to=now )
 #     # print(df.head())
 #     o = createchart(df, field='USD', zero=True)
 #     print(o)
