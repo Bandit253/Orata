@@ -20,7 +20,7 @@ def getorders():
     try:
         sql = """select id, product_id, filled_size, side, model """
         sql += """ from trades """
-        sql += f""" where extract(EPOCH from now()::timestamp - done_at::timestamp) > delay """
+        sql += f""" where extract(EPOCH from now()::timestamp - done_at::timestamp at time zone 'UTC') > delay """
         sql += """ and sold = '0' and delay > 0 """
         sql += """ ORDER BY created_at desc; """
         openbuys = DB.querydb(sql)

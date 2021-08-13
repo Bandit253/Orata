@@ -185,13 +185,13 @@ def createfillchart(df: DataFrame)->str:
     return chartzip
 
 
-# def main():
-#     now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-#     dt_from = (datetime.datetime.now() - datetime.timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')
-#     df = dffromdb('status', model=[3], dt_from=dt_from, dt_to=now )
-#     # print(df.head())
-#     o = createchart(df, field='USD', zero=True)
-#     print(o)
+def main():
+    now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    dt_from = (datetime.datetime.now() - datetime.timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')
+    df = dffromdb('status', model=[3], dt_from=dt_from, dt_to=now )
+    # print(df.head())
+    o = createchart(df, field='USD', zero=True)
+    print(o)
 
-# if __name__ == '__main__':
-#     main()
+if __name__ == '__main__':
+    main()

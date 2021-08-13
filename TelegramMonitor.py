@@ -26,7 +26,26 @@ def getnow():
     now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     yesterday = (datetime.datetime.now() - datetime.timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')
     return now, yesterday
-            
+
+def getaccountbalances(portfolio):
+    try:
+        sql = """select "BTC", "USD" """
+        sql += """ from status """
+        sql += f""" where model = 'model {portfolio}' """
+        sql += """ ORDER BY created desc limit 1; """
+        balances = DB.querydb(sql)
+    except Exception as e:
+        print(e)
+    return balances
+
+def checkbalances(portfolio, btc=None, dollars=None):
+    bal = getaccountbalances(portfolio)
+    if btc is not None and float(bal[0][0]) > btc:
+        return True
+    if dollars is not None and float(bal[0][1]) > dollars:
+        return True
+    return False
+
 
 async def send_mess(entity, message):
     await client.send_message(entity=entity, message=message)
@@ -46,23 +65,28 @@ async def my_event_handler(event):
         else:
             closedelay = DEFAULT_CLOSE_DELAY
         if action == 'BUY':
-            buyres = CBs[modelindex].marketBuy('BTC-USD', TRADE_UNIT)
-            tradeid = buyres.id[0]
-            
-            acc = reportbalance(CBs[modelindex])
-            await send_mess(chatname, acc)
-            updatedb(CBs[modelindex], tradeid, modelindex, closedelay, 'BUY', 'OPEN')
+            if checkbalances(modelindex, dollars=TRADE_UNIT):
+                buyres = CBs[modelindex].marketBuy('BTC-USD', TRADE_UNIT)
+                tradeid = buyres.id[0]
+                acc = reportbalance(CBs[modelindex])
+                await send_mess(chatname, acc)
+                updatedb(CBs[modelindex], tradeid, modelindex, closedelay, 'BUY', 'OPEN')
+            else:
+                err = f"Portfolio {modelindex} does not have enough funds to execute trade"
+                await send_mess(chatname, err)
         elif action == 'SELL':
             rate = CBpub.getprice(f'BTC-USD')
             quantitytosell = TRADE_UNIT/ float(rate)
-            sellres =CBs[modelindex].marketSell('BTC-USD', quantitytosell)
-            tradeid = sellres.id[0]
-            
-            acc = reportbalance(CBs[modelindex])
-            await send_mess(chatname, acc)
-            updatedb(CBs[modelindex], tradeid, modelindex, closedelay, 'SELL', 'OPEN')
+            if checkbalances(modelindex, btc=quantitytosell):
+                sellres =CBs[modelindex].marketSell('BTC-USD', quantitytosell)
+                tradeid = sellres.id[0]
+                acc = reportbalance(CBs[modelindex])
+                await send_mess(chatname, acc)
+                updatedb(CBs[modelindex], tradeid, modelindex, closedelay, 'SELL', 'OPEN')
+            else:
+                err = f"Portfolio {modelindex} does not have enough funds to execute trade"
+                await send_mess(chatname, err)
         elif action == "HOLD":
-            # acc = reportbalance(CBs[modelindex])
             await send_mess(chatname, "HOLD functionality has been deprecated, use 'BAL <index>'")
         elif action == 'BAL':
             acc = reportbalance(CBs[modelindex])

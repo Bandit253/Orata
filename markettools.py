@@ -24,6 +24,7 @@ def getmarketprice(symbol):
         return 1
 
 def reportbalance(CB):
+    
     df = CB.getAccounts()
     df['Rate'] = df.apply(lambda row: getmarketprice(row['currency']), axis=1)
     df['Total $US'] = df.apply(lambda row: (row['Rate']*float(row['balance'])), axis=1)
@@ -32,6 +33,7 @@ def reportbalance(CB):
     for index, row in df.iterrows():
         balance += f"{row['currency']} : {float(row['available']):.10f} : {float(row['Rate']):.2f} : {float(row['Total $US']):.2f}\n"
     balance += f"Total $US {df['Total $US'].sum():.2f}"
+    
     return balance
 
 def getbalance(CB):
