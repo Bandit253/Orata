@@ -51,21 +51,32 @@ def closebuys(trades):
                 modelindex = row[4]
                 action = row[3]
                 if action == 'buy':
-                    traderes = CBs[modelindex].marketSell(row[1], row[2])
-                    nextaction = 'SELL'
+                    if DB.checkbalances(modelindex, btc=row[2] ):
+                        traderes = CBs[modelindex].marketSell(row[1], row[2])
+                        nextaction = 'SELL'
+                    else:
+                        message = f"Reverse trade SELL for protfolio {modelindex} failed due to insuffient BTC"
+                        send_direct_mess(message)
+                        nextaction = 'SKIP'
                 else:
-                    traderes = CBs[modelindex].marketBuy(row[1], TRADE_UNIT)
-                    nextaction = 'BUY'
-                tradeid = traderes.id[0]
-                tradereport = CBs[modelindex].getOrderID(id=tradeid)
-                DB.insert('trades', tradereport)
-                closeout((tradeid,row[0]))
-                status,  jsbal = getbalance(CBs[modelindex])
-                status['trade'] = nextaction
-                status['action'] = 'CLOSE'
-                DB.insert('status', status)
-                if row[4] not in cb2report:
-                    cb2report.append(modelindex)
+                    if DB.checkbalances(modelindex, dollars=TRADE_UNIT):
+                        traderes = CBs[modelindex].marketBuy(row[1], TRADE_UNIT)
+                        nextaction = 'BUY'
+                    else:
+                        message = f"Reverse trade BUY for protfolio {modelindex} failed due to insuffient USD"
+                        send_direct_mess(message)
+                        nextaction = 'SKIP'
+                if nextaction == 'SKIP':
+                    tradeid = traderes.id[0]
+                    tradereport = CBs[modelindex].getOrderID(id=tradeid)
+                    DB.insert('trades', tradereport)
+                    closeout((tradeid,row[0]))
+                    status,  jsbal = getbalance(CBs[modelindex])
+                    status['trade'] = nextaction
+                    status['action'] = 'CLOSE'
+                    DB.insert('status', status)
+                    if row[4] not in cb2report:
+                        cb2report.append(modelindex)
     except Exception as e:
         print(e)
     return cb2report

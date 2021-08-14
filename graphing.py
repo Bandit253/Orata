@@ -71,7 +71,7 @@ def createchart(df: DataFrame, field:str='Total', zero:bool=False)->str:
         fig.add_trace(go.Scatter(x = dfm['created'],
                         y = dfm[field],
                         mode='lines',
-                        legendgroup=model,
+                        # legendgroup=model,
                         name=model),
                         secondary_y=True)
         dfso = dfm.loc[(dfm['trade'] == 'SELL') & (dfm['action'] == 'OPEN')]
@@ -87,7 +87,7 @@ def createchart(df: DataFrame, field:str='Total', zero:bool=False)->str:
                         y = pts[0][field],
                         mode='markers',
                         marker = dict(size =8, color =pts[2], symbol =pts[3]),
-                        legendgroup=model,
+                        # legendgroup=model,
                         name=pts[1]),
                         secondary_y=True)
     

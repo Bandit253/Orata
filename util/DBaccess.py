@@ -121,6 +121,24 @@ class postgres():
         df = pd.read_sql_query(sql ,con=engine)
         return df
 
+    def getaccountbalances(self, portfolio):
+        try:
+            sql = """select "BTC", "USD" """
+            sql += """ from status """
+            sql += f""" where model = 'model {portfolio}' """
+            sql += """ ORDER BY created desc limit 1; """
+            balances = self.querydb(sql)
+        except Exception as e:
+            print(e)
+        return balances
+
+    def checkbalances(self, portfolio, btc=None, dollars=None):
+        bal = self.getaccountbalances(portfolio)
+        if btc is not None and float(bal[0][0]) > btc:
+            return True
+        if dollars is not None and float(bal[0][1]) > dollars:
+            return True
+        return False
 
 
 # def main():
