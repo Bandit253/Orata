@@ -42,6 +42,27 @@ def closeout(tradeids):
         print(e)
     return 
 
+
+def updatefailedrev(tradeid):
+    try:
+        sql = """ update trades """
+        sql += f""" set sold = 'REVERSE FAILED'"""
+        sql += f""" where id = '{tradeid}'; """    
+        DB.update(sql)
+    except Exception as e:
+        print(e)
+    return 
+
+def getprofit(buyid):
+    try:
+        sql = """ select B.executed_value - A.executed_value as Profit """
+        sql += f""" from trades A, trades B """
+        sql += f""" where A.id ='{buyid}' and A.id = B.sold  """
+        profit = DB.querydb(sql)[0]
+    except Exception as e:
+        print(e)
+    return profit
+
 def closebuys(trades):
     # print('Start closebuys')
     try:
@@ -50,6 +71,7 @@ def closebuys(trades):
             for row in trades:
                 modelindex = row[4]
                 action = row[3]
+                profit = 0
                 if action == 'buy':
                     if DB.checkbalances(modelindex, btc=row[2] ):
                         traderes = CBs[modelindex].marketSell(row[1], row[2])
@@ -67,6 +89,8 @@ def closebuys(trades):
                         send_direct_mess(message)
                         nextaction = 'SKIP'
                 if nextaction == 'SKIP':
+                    updatefailedrev(row[0])
+                else:
                     tradeid = traderes.id[0]
                     tradereport = CBs[modelindex].getOrderID(id=tradeid)
                     DB.insert('trades', tradereport)
@@ -77,6 +101,10 @@ def closebuys(trades):
                     DB.insert('status', status)
                     if row[4] not in cb2report:
                         cb2report.append(modelindex)
+                    profit = getprofit(row[0])[0]
+                    print(profit)
+                    msg = f"Closing trade '{nextaction}' : Profit: {profit:.3f} " 
+                    send_direct_mess(msg)
     except Exception as e:
         print(e)
     return cb2report

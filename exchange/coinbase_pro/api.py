@@ -428,6 +428,35 @@ class AuthAPI(AuthAPIBase):
         # place order and return result
         return model.authAPI('POST', 'orders', order)
 
+    def limitBuy(self, id:str, market: str, price:str, size:str, delay:int) -> pd.DataFrame:
+        """Executes a market buy providing a funding amount"""
+
+        # validates the market is syntactically correct
+        if not self._isMarketValid(market):
+            raise ValueError('Coinbase Pro market is invalid.')
+
+        order = {
+            'Client_oid' : id,
+            'product_id': market,
+            'type': 'limit',
+            'side': 'buy',
+            'Time_in_Force' : 'GTT',
+            'stp' : 'co',
+            # 'cancel_after' : f'{delay} min',
+            'cancel_after' : 'min',
+            'size' : size,
+            'price' : price
+            # 'funds': self.marketQuoteIncrement(market, quote_quantity)
+        }
+        now = self.getnow()
+        print(f"{now} - LIMIT BUY - {self.name} - {order}")
+        # connect to authenticated coinbase pro api
+        model = AuthAPI(self._api_key, self._api_secret,
+                        self._api_passphrase, self._api_url)
+
+        # place order and return result
+        return model.authAPI('POST', 'orders', order)
+
     def transfer(self, frmacc, toacc, currency, amount) -> pd.DataFrame:
                 # {
                 #     "from": "86602c68-306a-4500-ac73-4ce56a91d83c",

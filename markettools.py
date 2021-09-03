@@ -41,9 +41,12 @@ def getbalance(CB):
     df['Rate'] = df.apply(lambda row: getmarketprice(row['currency']), axis=1)
     df['Total $US'] = df.apply(lambda row: (row['Rate']*float(row['balance'])), axis=1)
     now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    btcbal = 0
     for index, row in df.iterrows():
         if row['currency'] == 'USD':
             dollarbal = row['available']
+            btcrate = 0
+            btcdollar = row['Total $US']
         elif row['currency'] == 'BTC':
             btcbal = row['available']
             btcrate = row['Rate']

@@ -2,10 +2,11 @@ import datetime
 import json
 from telethon import TelegramClient, events
 import pandas as pd
-from config.Ttrader_config import api_hash,bot_token,chatname,api_id,TRADE_UNIT,DB_CONFIG, DEFAULT_CLOSE_DELAY
+from config.Ttrader_config import api_hash,bot_token,chatname,api_id,TRADE_UNIT,DB_CONFIG, DEFAULT_CLOSE_DELAY, MARGIN
 from util import DBaccess as db
 from markettools import CBs, CBpub, getbalance, reportbalance, resetbalances
 from graphing import createfillchart, dffromdb, createchart
+import uuid
 
 DB = db.postgres(DB_CONFIG)
 
@@ -56,7 +57,7 @@ async def my_event_handler(event):
     # print(rec)  
     command = rec.split(" ")
     action =command[0].upper()
-    if action in ('BUY', 'SELL', 'HOLD', 'BAL', 'RESET', 'CHART'):
+    if action in ('BUY', 'SELL','LBUY', 'LSELL', 'HOLD', 'BAL', 'RESET', 'CHART', 'ORDERS'):
         print(rec) 
         if action != 'CHART':
             modelindex = int(command[1]) 
@@ -74,6 +75,35 @@ async def my_event_handler(event):
             else:
                 err = f"Portfolio {modelindex} does not have enough funds to execute trade"
                 await send_mess(chatname, err)
+
+        elif action == 'ORDERS':  ####################################
+            
+            orders = CBs[modelindex].getOrders(status='open') 
+            print(orders.head())
+                # tradeid = buyres.id[0]
+            # acc = reportbalance(CBs[modelindex])
+
+            await send_mess(chatname, orders.to_json())
+            # updatedb(CBs[modelindex
+
+        elif action == 'LBUY':  ####################################
+            if DB.checkbalances(modelindex, dollars=TRADE_UNIT):
+                rate = float(CBpub.getprice(f'BTC-USD'))
+                fprice = rate - (rate * MARGIN)
+                futureprice = f"{fprice:.2f}"
+                cli_id = str(uuid.uuid4())
+                size = round(TRADE_UNIT/fprice, 8)
+                buyres = CBs[modelindex].limitBuy(id=cli_id, market='BTC-USD', price=futureprice, size=size,delay=int(closedelay/60))
+                # tradeid = buyres.id[0]
+                acc = reportbalance(CBs[modelindex])
+
+                await send_mess(chatname, acc)
+                # updatedb(CBs[modelindex], tradeid, modelindex, closedelay, 'BUY', 'OPEN')
+            else:
+                err = f"Portfolio {modelindex} does not have enough funds to execute trade"
+                await send_mess(chatname, err)
+
+
         elif action == 'SELL':
             rate = CBpub.getprice(f'BTC-USD')
             quantitytosell = TRADE_UNIT/ float(rate)
