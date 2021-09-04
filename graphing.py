@@ -1,5 +1,7 @@
 
 import datetime
+from dateutil import tz
+from numpy import mod
 import pandas as pd
 import os
 from pandas.core.frame import DataFrame
@@ -184,13 +186,107 @@ def createfillchart(df: DataFrame)->str:
         zipf.write(html, arcname=f"{mfile}.html", compress_type=ZIP_DEFLATED)
     return chartzip
 
+def createprofitchart(df: DataFrame, field:str='profit', zero:bool=False)->str:
+    models = df['model'].unique()
+    stats = []
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
+    for model in models:
+        dfm = df.loc[df['model'] == model]
+        min = dfm[field].min()
+        max = dfm[field].max()
+        f = dfm[field].iloc[0]
+        l = dfm[field].iloc[-1]
+        change = l-f
+        perc = (change/f)*100
+        tsat = f"{model}: Range (min, max): {min:.2f} to {max:.2f}, Change: {change:.2f} ({perc:.2f}%) "
+        tsat += f"Current Total {l:.2f}<br>"
+        stats.append(tsat)
+        # print(dfm.head())
+        if zero:
+            first = dfm[field].iloc[0]
+            dfm[field] = dfm[field] - first
+        # print(dfm.head())
+        fig.add_trace(go.Scatter(x = dfm['sell_time'],
+                        y = dfm[field],
+                        mode='lines',
+                        # legendgroup=model,
+                        name=f"Model- {model}"),
+                        secondary_y=True)   
+    btc.updatehistory()
+    now, yesterday = getnow()
+    df = btc.getbtc(yesterday)    
+    
+    min = df['Close'].min()
+    max = df['Close'].max()
+    f = df['Close'].iloc[0]
+    l = df['Close'].iloc[-1]
+    
+    change = l-f
+    perc = (change/f)*100
+    tsat = f"BTC: Close Range (min, max): {min:.2f} to {max:.2f}, Change: {change:.2f} ({perc:.2f}%) "
+    tsat += f"Current Rate {l:.2f}<br>"
+    stats.append(tsat)
+
+    fig.add_trace(go.Candlestick(
+                        x=df['dtz'],
+                        open=df['Open'],
+                        high=df['High'],
+                        low=df['Low'],
+                        close=df['Close'],
+                        name = 'Candles'),
+                        secondary_y=False)
+
+    fig.update_layout(xaxis_rangeslider_visible=False)
+    title = f"Bots Versus Market: {field}<br>"
+    for s in stats:
+        title += s
+    fig.update_layout(title_text=title)
+    fig.update_xaxes(title_text="Date")
+    fig.update_yaxes(title_text="<b>US $</b>", secondary_y=True)
+    fig.update_yaxes(title_text="<b>1 Bitcoin</b>", secondary_y=False)
+
+    # fig.show()
+    # mfile = "-".join(str(models)).replace(" ","")
+    mfile = ''
+    for n in models:
+        mfile += f"model-{str(n)} profit"  
+    html = f"data/{mfile}.html"
+    fig.write_html(html)
+    chartzip =os.path.join('zipfiles', mfile + ".zip")
+    with ZipFile(chartzip, 'w') as zipf:
+        zipf.write(html, arcname=f"{mfile}.html", compress_type=ZIP_DEFLATED)
+    return chartzip
+
+def dffromdbsql(model: list, dt_from:str=None, dt_to:str=None) -> pd.DataFrame:
+    if len(model) >0:
+        mod = [f"{str(x)}" for x in model]
+        modstr = ", ".join(mod)
+    fromstr = """ from trades A, trades B """
+    rangestr = f""" A.created_at >= '{dt_from}' and A.created_at <= '{dt_to}' """
+    sql = """select A.created_at as Buy_Time, A.executed_value as Buy_Value, B.created_at as Sell_Time, """   
+    sql += """B.executed_value as Sell_Value, B.executed_value - A.executed_value as Profit, A.model as model  """
+    sql += fromstr
+    sql += f""" WHERE A.side ='buy' and A.id = B.sold and A.model in ({modstr})  and """ + rangestr
+    sql += """ UNION """
+    sql += """select B.created_at as Buy_Time, B.executed_value as Buy_Value, A.created_at as Sell_Time, """  
+    sql += """ A.executed_value as Sell_Value, A.executed_value - B.executed_value as Profit, A.model as model """
+    sql += fromstr
+    sql += f""" WHERE A.side ='sell' and A.id = B.sold and A.model in ({modstr})  and """ + rangestr
+    sql += """ORDER BY sell_Time;"""
+    # print(sql)
+    df = DB.dffromsql(sql)
+    df['buy_time'] = pd.to_datetime(df['buy_time'], format='%Y-%m-%d %H:%M:%S').dt.tz_convert('Australia/Melbourne')
+    df['sell_time'] = pd.to_datetime(df['sell_time'], format='%Y-%m-%d %H:%M:%S').dt.tz_convert('Australia/Melbourne')
+    df['profit'] = pd.to_numeric(df['profit'])
+    return df
+
 
 def main():
     now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     dt_from = (datetime.datetime.now() - datetime.timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')
-    df = dffromdb('status', model=[3], dt_from=dt_from, dt_to=now )
-    # print(df.head())
-    o = createchart(df, field='USD', zero=True)
+    df = dffromdbsql(model=[1,], dt_from=dt_from, dt_to=now )
+    print(df.head())
+    o = createprofitchart(df, field='profit', zero=False)
     print(o)
 
 if __name__ == '__main__':

@@ -5,7 +5,7 @@ import pandas as pd
 from config.Ttrader_config import api_hash,bot_token,chatname,api_id,TRADE_UNIT,DB_CONFIG, DEFAULT_CLOSE_DELAY, MARGIN
 from util import DBaccess as db
 from markettools import CBs, CBpub, getbalance, reportbalance, resetbalances
-from graphing import createfillchart, dffromdb, createchart
+from graphing import createfillchart, dffromdb, createchart, dffromdbsql, createprofitchart
 import uuid
 
 DB = db.postgres(DB_CONFIG)
@@ -142,7 +142,13 @@ async def my_event_handler(event):
                 zipchart = createchart(df, zero=False, field='Total') 
             elif type == 'TZ':
                 df = dffromdb('status', model=mods, dt_from=dt_from, dt_to=dt_to )
-                zipchart = createchart(df, zero=True, field='Total')                 
+                zipchart = createchart(df, zero=True, field='Total')               
+            elif type == 'T':
+                df = dffromdbsql(model=mods, dt_from=dt_from, dt_to=dt_to )
+                zipchart = o = createprofitchart(df, field='profit', zero=False)     
+            elif type == 'PZ':   
+                df = dffromdbsql(model=mods, dt_from=dt_from, dt_to=dt_to )
+                zipchart = o = createprofitchart(df, field='profit', zero=True)       
             else:   
                 await client.send_message(chatname, f"Error: '{rec}' is not a valid chart command" )       
             if zipchart:                

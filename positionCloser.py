@@ -102,7 +102,7 @@ def closebuys(trades):
                     if row[4] not in cb2report:
                         cb2report.append(modelindex)
                     profit = getprofit(row[0])[0]
-                    print(profit)
+                    # print(profit)
                     msg = f"Closing trade '{nextaction}' : Profit: {profit:.3f} " 
                     send_direct_mess(msg)
     except Exception as e:
