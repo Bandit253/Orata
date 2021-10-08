@@ -68,41 +68,44 @@ async def my_event_handler(event):
         if action == 'BUY':
             if DB.checkbalances(modelindex, dollars=TRADE_UNIT):
                 buyres = CBs[modelindex].marketBuy('BTC-USD', TRADE_UNIT)
+                # print(buyres.head())
                 tradeid = buyres.id[0]
+                # status = buyres.status[0]
+                # print(status)
                 acc = reportbalance(CBs[modelindex])
-                await send_mess(chatname, acc)
+                await send_mess(chatname, f"{tradeid} - {acc}")
                 updatedb(CBs[modelindex], tradeid, modelindex, closedelay, 'BUY', 'OPEN')
             else:
                 err = f"Portfolio {modelindex} does not have enough funds to execute trade"
                 await send_mess(chatname, err)
-
-        elif action == 'ORDERS':  ####################################
+        #region LIMITED BUY
+        # elif action == 'ORDERS':  ####################################
             
-            orders = CBs[modelindex].getOrders(status='open') 
-            print(orders.head())
-                # tradeid = buyres.id[0]
-            # acc = reportbalance(CBs[modelindex])
+        #     orders = CBs[modelindex].getOrders(status='open') 
+        #     print(orders.head())
+        #         # tradeid = buyres.id[0]
+        #     # acc = reportbalance(CBs[modelindex])
 
-            await send_mess(chatname, orders.to_json())
-            # updatedb(CBs[modelindex
+        #     await send_mess(chatname, orders.to_json())
+        #     # updatedb(CBs[modelindex
 
-        elif action == 'LBUY':  ####################################
-            if DB.checkbalances(modelindex, dollars=TRADE_UNIT):
-                rate = float(CBpub.getprice(f'BTC-USD'))
-                fprice = rate - (rate * MARGIN)
-                futureprice = f"{fprice:.2f}"
-                cli_id = str(uuid.uuid4())
-                size = round(TRADE_UNIT/fprice, 8)
-                buyres = CBs[modelindex].limitBuy(id=cli_id, market='BTC-USD', price=futureprice, size=size,delay=int(closedelay/60))
-                # tradeid = buyres.id[0]
-                acc = reportbalance(CBs[modelindex])
+        # elif action == 'LBUY':  ####################################
+        #     if DB.checkbalances(modelindex, dollars=TRADE_UNIT):
+        #         rate = float(CBpub.getprice(f'BTC-USD'))
+        #         fprice = rate - (rate * MARGIN)
+        #         futureprice = f"{fprice:.2f}"
+        #         cli_id = str(uuid.uuid4())
+        #         size = round(TRADE_UNIT/fprice, 8)
+        #         buyres = CBs[modelindex].limitBuy(id=cli_id, market='BTC-USD', price=futureprice, size=size,delay=int(closedelay/60))
+        #         # tradeid = buyres.id[0]
+        #         acc = reportbalance(CBs[modelindex])
 
-                await send_mess(chatname, acc)
-                # updatedb(CBs[modelindex], tradeid, modelindex, closedelay, 'BUY', 'OPEN')
-            else:
-                err = f"Portfolio {modelindex} does not have enough funds to execute trade"
-                await send_mess(chatname, err)
-
+        #         await send_mess(chatname, acc)
+        #         # updatedb(CBs[modelindex], tradeid, modelindex, closedelay, 'BUY', 'OPEN')
+        #     else:
+        #         err = f"Portfolio {modelindex} does not have enough funds to execute trade"
+        #         await send_mess(chatname, err)
+        #endregion
 
         elif action == 'SELL':
             rate = CBpub.getprice(f'BTC-USD')
@@ -111,7 +114,7 @@ async def my_event_handler(event):
                 sellres =CBs[modelindex].marketSell('BTC-USD', quantitytosell)
                 tradeid = sellres.id[0]
                 acc = reportbalance(CBs[modelindex])
-                await send_mess(chatname, acc)
+                await send_mess(chatname, f"{tradeid} - {acc}")
                 updatedb(CBs[modelindex], tradeid, modelindex, closedelay, 'SELL', 'OPEN')
             else:
                 err = f"Portfolio {modelindex} does not have enough funds to execute trade"
@@ -146,6 +149,9 @@ async def my_event_handler(event):
             elif type == 'T':
                 df = dffromdbsql(model=mods, dt_from=dt_from, dt_to=dt_to )
                 zipchart = o = createprofitchart(df, field='profit', zero=False)     
+            elif type == 'P':   
+                df = dffromdbsql(model=mods, dt_from=dt_from, dt_to=dt_to )
+                zipchart = o = createprofitchart(df, field='profit', zero=False)       
             elif type == 'PZ':   
                 df = dffromdbsql(model=mods, dt_from=dt_from, dt_to=dt_to )
                 zipchart = o = createprofitchart(df, field='profit', zero=True)       

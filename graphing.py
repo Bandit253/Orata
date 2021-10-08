@@ -198,7 +198,7 @@ def createprofitchart(df: DataFrame, field:str='profit', zero:bool=False)->str:
         l = dfm[field].iloc[-1]
         change = l-f
         perc = (change/f)*100
-        tsat = f"{model}: Range (min, max): {min:.2f} to {max:.2f}, Change: {change:.2f} ({perc:.2f}%) "
+        tsat = f"Model-{model}: Range (min, max): {min:.2f} to {max:.2f}, Change: {change:.2f} ({perc:.2f}%) "
         tsat += f"Current Total {l:.2f}<br>"
         stats.append(tsat)
         # print(dfm.head())
@@ -210,7 +210,7 @@ def createprofitchart(df: DataFrame, field:str='profit', zero:bool=False)->str:
                         y = dfm[field],
                         mode='lines',
                         # legendgroup=model,
-                        name=f"Model- {model}"),
+                        name=f"Model-{model}"),
                         secondary_y=True)   
     btc.updatehistory()
     now, yesterday = getnow()
