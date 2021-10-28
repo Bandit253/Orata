@@ -35,7 +35,7 @@ class AuthAPIBase():
 
 
 class AuthAPI(AuthAPIBase):
-    def __init__(self, api_key='', api_secret='', api_passphrase='', api_url='https://api.pro.coinbase.com', name='', id='') -> None:
+    def __init__(self, api_key='', api_secret='', api_passphrase='', api_url='https://api.pro.coinbase.com', name='', id='', market='', trade_unit=0) -> None:
         """Coinbase Pro API object model
 
         Parameters
@@ -89,6 +89,8 @@ class AuthAPI(AuthAPIBase):
         self._api_url = api_url
         self.name = name
         self.id = id
+        self.market = market
+        self.trade_unit = trade_unit
 
     def handle_init_error(self, err: str) -> None:
         if self.debug:

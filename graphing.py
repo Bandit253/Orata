@@ -284,9 +284,10 @@ def dffromdbsql(model: list, dt_from:str=None, dt_to:str=None) -> pd.DataFrame:
 def main():
     now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     dt_from = (datetime.datetime.now() - datetime.timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')
-    df = dffromdbsql(model=[1,], dt_from=dt_from, dt_to=now )
+    df = dffromdbsql(model=[5,], dt_from=dt_from, dt_to=now )
     print(df.head())
-    o = createprofitchart(df, field='profit', zero=False)
+    o = createchart(df, field='USD', zero=False)
+    # o = createprofitchart(df, field='profit', zero=False)
     print(o)
 
 if __name__ == '__main__':

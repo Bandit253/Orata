@@ -125,7 +125,10 @@ class postgres():
         try:
             sql = """select "BTC", "USD" """
             sql += """ from status """
-            sql += f""" where model = 'model {portfolio}' """
+            if portfolio == 5:
+                sql += f""" where model = 'Orata Default' """
+            else:
+                sql += f""" where model = 'model {portfolio}' """
             sql += """ ORDER BY created desc limit 1; """
             balances = self.querydb(sql)
         except Exception as e:
@@ -134,6 +137,8 @@ class postgres():
 
     def checkbalances(self, portfolio, btc=None, dollars=None):
         bal = self.getaccountbalances(portfolio)
+        if len(bal) == 0:
+            return True
         if btc is not None and float(bal[0][0]) > btc:
             return True
         if dollars is not None and float(bal[0][1]) > dollars:

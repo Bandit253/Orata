@@ -12,12 +12,20 @@ for model, cfg in portfolios.items():
                     portfolios[model]['api_passphrase'], 
                     portfolios[model]['api_url'],
                     portfolios[model]['name'],
-                    portfolios[model]['id'])
+                    portfolios[model]['id'],
+                    portfolios[model]['market'],
+                    portfolios[model]['trade_unit'])
     CBs.append(CB)
 CBpub = api.PublicAPI()
 
 def getmarketprice(symbol):
-    if symbol != 'USD':
+    if symbol == 'USDC':
+        rate = CBpub.getprice(f'USDT-USDC')
+        return float(rate)
+    elif symbol == 'USDC':
+        rate = CBpub.getprice(f'USDT-USD')
+        return float(rate)
+    elif symbol != 'USD':
         rate = CBpub.getprice(f'{symbol}-USD')
         return float(rate)
     else:
@@ -43,7 +51,7 @@ def getbalance(CB):
     now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     btcbal = 0
     for index, row in df.iterrows():
-        if row['currency'] == 'USD':
+        if row['currency'] == 'USDC'or row['currency'] == 'USD':
             dollarbal = row['available']
             btcrate = 0
             btcdollar = row['Total $US']
@@ -58,7 +66,7 @@ def getbalance(CB):
 def resetbalances(CBfrom, CBto):
     curbal = CBto.getAccounts()
     for index, row in curbal.iterrows():
-        if row['currency'] == 'USD':
+        if row['currency'] == 'USD' or row['currency'] == 'USDC':
             dol_dif = START_USD - float(row['available'])
             if dol_dif > 0:
                 CBfrom.transfer(CBfrom.id, CBto.id, 'USD', dol_dif )

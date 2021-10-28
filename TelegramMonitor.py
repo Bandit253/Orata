@@ -2,9 +2,9 @@ import datetime
 import json
 from telethon import TelegramClient, events
 import pandas as pd
-from config.Ttrader_config import api_hash,bot_token,chatname,api_id,TRADE_UNIT,DB_CONFIG, DEFAULT_CLOSE_DELAY, MARGIN
+from config.Ttrader_config import api_hash,bot_token,chatname,api_id,DB_CONFIG, DEFAULT_CLOSE_DELAY, MARGIN, TRADE_PERCENTAGE
 from util import DBaccess as db
-from markettools import CBs, CBpub, getbalance, reportbalance, resetbalances
+from markettools import CBs, CBpub, getbalance, reportbalance, resetbalances, getmarketprice
 from graphing import createfillchart, dffromdb, createchart, dffromdbsql, createprofitchart
 import uuid
 
@@ -28,24 +28,28 @@ def getnow():
     yesterday = (datetime.datetime.now() - datetime.timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')
     return now, yesterday
 
-# def getaccountbalances(portfolio):
-#     try:
-#         sql = """select "BTC", "USD" """
-#         sql += """ from status """
-#         sql += f""" where model = 'model {portfolio}' """
-#         sql += """ ORDER BY created desc limit 1; """
-#         balances = DB.querydb(sql)
-#     except Exception as e:
-#         print(e)
-#     return balances
-
-# def checkbalances(portfolio, btc=None, dollars=None):
-#     bal = getaccountbalances(portfolio)
-#     if btc is not None and float(bal[0][0]) > btc:
-#         return True
-#     if dollars is not None and float(bal[0][1]) > dollars:
-#         return True
-#     return False
+def getparcelsize(portfolio, symbol, TRADE_UNIT, rate = 1):
+    currbal = DB.getaccountbalances(portfolio)
+    if symbol == 'USDC':
+        parcel = float(currbal[0][1]) * TRADE_PERCENTAGE
+        if parcel > TRADE_UNIT:
+            return parcel
+        else:
+            print(float(currbal[0][1]))
+            if TRADE_UNIT < float(currbal[0][1]):
+                return TRADE_UNIT
+            else:
+                return 0
+    elif symbol == 'BTC':
+        parcel = float(currbal[0][0]) * TRADE_PERCENTAGE
+        TU_BTC = TRADE_UNIT/ float(rate)
+        if parcel > TU_BTC:
+            return parcel
+        else:
+            if TU_BTC < float(currbal[0][0]):
+                return TU_BTC
+            else:
+                return 0 
 
 
 async def send_mess(entity, message):
@@ -65,13 +69,14 @@ async def my_event_handler(event):
             closedelay = int(command[2])* 60
         else:
             closedelay = DEFAULT_CLOSE_DELAY
+        TRADINGPAIR = CBs[modelindex].market
+        TRADE_UNIT =  CBs[modelindex].trade_unit
         if action == 'BUY':
-            if DB.checkbalances(modelindex, dollars=TRADE_UNIT):
-                buyres = CBs[modelindex].marketBuy('BTC-USD', TRADE_UNIT)
-                # print(buyres.head())
+            parcel = getparcelsize(modelindex, 'USDC', TRADE_UNIT)
+            print(f"parcel : {parcel}")
+            if parcel > 0:
+                buyres = CBs[modelindex].marketBuy(TRADINGPAIR, parcel)
                 tradeid = buyres.id[0]
-                # status = buyres.status[0]
-                # print(status)
                 acc = reportbalance(CBs[modelindex])
                 await send_mess(chatname, f"{tradeid} - {acc}")
                 updatedb(CBs[modelindex], tradeid, modelindex, closedelay, 'BUY', 'OPEN')
@@ -91,12 +96,12 @@ async def my_event_handler(event):
 
         # elif action == 'LBUY':  ####################################
         #     if DB.checkbalances(modelindex, dollars=TRADE_UNIT):
-        #         rate = float(CBpub.getprice(f'BTC-USD'))
+        #         rate = float(CBpub.getprice(TRADINGPAIR))
         #         fprice = rate - (rate * MARGIN)
         #         futureprice = f"{fprice:.2f}"
         #         cli_id = str(uuid.uuid4())
         #         size = round(TRADE_UNIT/fprice, 8)
-        #         buyres = CBs[modelindex].limitBuy(id=cli_id, market='BTC-USD', price=futureprice, size=size,delay=int(closedelay/60))
+        #         buyres = CBs[modelindex].limitBuy(id=cli_id, market=TRADINGPAIR, price=futureprice, size=size,delay='min')
         #         # tradeid = buyres.id[0]
         #         acc = reportbalance(CBs[modelindex])
 
@@ -108,10 +113,11 @@ async def my_event_handler(event):
         #endregion
 
         elif action == 'SELL':
-            rate = CBpub.getprice(f'BTC-USD')
-            quantitytosell = TRADE_UNIT/ float(rate)
-            if DB.checkbalances(modelindex, btc=quantitytosell):
-                sellres =CBs[modelindex].marketSell('BTC-USD', quantitytosell)
+            rate = CBpub.getprice(TRADINGPAIR)
+            parcel = getparcelsize(modelindex, 'BTC', TRADE_UNIT, rate)
+            print(f"parcel : {parcel*float(rate)}")
+            if parcel > 0:
+                sellres =CBs[modelindex].marketSell(TRADINGPAIR, parcel)
                 tradeid = sellres.id[0]
                 acc = reportbalance(CBs[modelindex])
                 await send_mess(chatname, f"{tradeid} - {acc}")

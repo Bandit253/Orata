@@ -3,9 +3,9 @@ import threading
 import requests
 import pandas as pd
 
-from config.Ttrader_config import chat_id,bot_token,TRADE_UNIT,DB_CONFIG, CYCLE_TIME
+from config.Ttrader_config import chat_id,bot_token,DB_CONFIG, CYCLE_TIME
 from util import DBaccess as db
-from markettools import CBs, reportbalance, getbalance
+from markettools import CBs, CBpub, reportbalance, getbalance
 
 DB = db.postgres(DB_CONFIG)
 
@@ -81,8 +81,9 @@ def closebuys(trades):
                         send_direct_mess(message)
                         nextaction = 'SKIP'
                 else:
-                    if DB.checkbalances(modelindex, dollars=TRADE_UNIT):
-                        traderes = CBs[modelindex].marketBuy(row[1], TRADE_UNIT)
+                    if DB.checkbalances(modelindex, dollars=row[2]):
+                        rate = float(CBpub.getprice(row[1]))
+                        traderes = CBs[modelindex].marketBuy(row[1], row[2]*rate)
                         nextaction = 'BUY'
                     else:
                         message = f"Reverse trade BUY for protfolio {modelindex} failed due to insuffient USD"
